@@ -47,14 +47,9 @@ function raySegmentIntersect({x, y}: V2, a: V2, b: V2) {
         return true
 }
 
-// A 2 dimensional vector.
-interface V2 {
-    x: number
-    y: number
-}
-
-function v2(x = 0, y = x) {
-	return { x, y }
+type V2 = ReturnType<typeof V2>
+function V2(a = { x: 0, y: 0 }) {
+    return { x: a.x, y: a.y }
 }
 
 function degreesToRadians(degrees: number) {
@@ -132,7 +127,6 @@ export {
     wrapPosition,
     raySegmentIntersect,
     V2, 
-    v2, 
     v2Add, 
     v2Subtract,
     v2Negate,

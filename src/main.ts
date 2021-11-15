@@ -23,6 +23,12 @@ document.onvisibilitychange = function() {
     }
 }
 
+let game = State()
+let ship = Ship()
+let bullets = Bullets()
+let asteroids = Asteroids()
+let explosions = Explosions()
+
 function update(timestamp: number) {
     if (timestampPrev == 0) timestampPrev = timestamp
     let tDelta = timestamp - timestampPrev
@@ -518,7 +524,7 @@ requestAnimationFrame(update)
 
 function processKeyboardInput(ev: KeyboardEvent) {
     // The reason this is done directly in a window event and not in the main update loop
-    // is because if more than one key changes in a frame, only one of them is picked up.
+    // is because with the latter, if more than one key changes in a frame then only one of them is picked up.
     let keyDown = (ev.type == 'keydown')
     switch (ev.key) {
         case 'W':
@@ -543,13 +549,13 @@ function drawText(text: string, size: number, x: number, y: number) {
 }
 
 import {
-    game,
-    ship,
-    bullets,
-    asteroids,
+    State,
+    Ship,
+    Bullets,
+    Asteroids,
     AsteroidSize,
-    explosions,
-} from './gameState'
+    Explosions,
+} from './state'
 
 import { 
     shift, 
