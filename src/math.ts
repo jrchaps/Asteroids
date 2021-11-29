@@ -27,29 +27,10 @@ function lerp(from: number, to: number, t: number) {
     return (1 - t) * from + t * to
 }
 
-function wrap(value: number, min: number, max: number, offset: number) {
-    if (value > max + offset) return min - offset
-    if (value < min - offset) return max + offset
-    return value
-}
-
-function wrapPosition(position: V2, min: number, max: number, offset: number): V2 {
-    return {
-        x: wrap(position.x, min, max, offset),
-        y: wrap(position.y, min, max, offset)
-    }
-}
-
-function raySegmentIntersect({x, y}: V2, a: V2, b: V2) {
-    // The ray shoots positively with a slope of 0. 
-    if ((a.y > y) != (b.y > y)
-    && (x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x))
-        return true
-}
 
 type V2 = ReturnType<typeof V2>
-function V2(a = { x: 0, y: 0 }) {
-    return { x: a.x, y: a.y }
+function V2({ x = 0, y = 0 } = {}) {
+    return { x, y }
 }
 
 function degreesToRadians(degrees: number) {
@@ -58,11 +39,7 @@ function degreesToRadians(degrees: number) {
 
 function v2DirectionDegrees(degrees: number, scalar = 1): V2 {
     let radians = degreesToRadians(degrees)
-    return v2Scale({x: cos(radians), y: sin(radians)}, scalar)
-}
-
-function v2DirectionRadians(radians: number, scalar = 1): V2 {
-    return v2Scale({x: cos(radians), y: sin(radians)}, scalar)
+    return v2Scale({ x: cos(radians), y: sin(radians) }, scalar)
 }
 
 function v2Dot(a: V2, b: V2) {
@@ -109,6 +86,26 @@ function v2Negate(a: V2): V2 {
     return { x: -a.x, y: -a.y }
 }
 
+function wrap(value: number, min: number, max: number, offset: number) {
+    if (value > max + offset) return min - offset
+    if (value < min - offset) return max + offset
+    return value
+}
+
+function wrapPosition(position: V2, min: number, max: number, offset: number): V2 {
+    return {
+        x: wrap(position.x, min, max, offset),
+        y: wrap(position.y, min, max, offset)
+    }
+}
+
+function raySegmentIntersect({x, y}: V2, a: V2, b: V2) {
+    // The ray shoots positively with a slope of 0. 
+    if ((a.y > y) != (b.y > y)
+    && (x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x))
+        return true
+}
+
 export { 
     sign,
     pow,
@@ -124,17 +121,17 @@ export {
     cos, 
     sin, 
     degreesToRadians,
-    wrapPosition,
-    raySegmentIntersect,
     V2, 
     v2Add, 
     v2Subtract,
     v2Negate,
     v2Scale, 
-    v2DirectionDegrees as v2Direction, 
-    v2RotateDegrees as v2Rotate, 
+    v2DirectionDegrees, 
+    v2RotateDegrees, 
     v2Dot,
     v2LengthSquared, 
     v2Length,
     v2Normalize, 
+    wrapPosition,
+    raySegmentIntersect,
 }
