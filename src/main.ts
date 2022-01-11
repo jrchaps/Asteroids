@@ -1,7 +1,6 @@
 /*
     Todos:
-    -- Change the coordinate system to reflect normal math.
-    -- Use WebGl.
+    -- Use WebGl. Can we be independent of WebGl and 2D canvas? Probably not, they aren't very compatible.
 */
 
 // Prevent input when user isn't focused on inner window?
@@ -31,96 +30,103 @@ let textColor = { r: .87, g: .87, b: 1, a: 1 }
 
 let asteroidsVertices = [
         [
-            v2Direction(-135),
-            v2Direction(-60, .45),
-            v2Direction(-30),
-            v2Direction(-350),
-            v2Direction(-270),
-            v2Direction(-200),
+            v2Direction(135),
+            v2Direction(60, .45),
+            v2Direction(30),
+            v2Direction(350),
+            v2Direction(270),
+            v2Direction(200),
         ],
         [
-            v2Direction(-135),
-            v2Direction(-115, .4),
-            v2Direction(-45),
+            v2Direction(135),
+            v2Direction(115, .4),
+            v2Direction(45),
             v2Direction(0),
-            v2Direction(-290),
-            v2Direction(-210),
+            v2Direction(290),
+            v2Direction(210),
         ],
         [
-            v2Direction(-90),
-            v2Direction(-15),
-            v2Direction(-315),
-            v2Direction(-295, .55),
-            v2Direction(-240),
-            v2Direction(-165),
+            v2Direction(90),
+            v2Direction(15),
+            v2Direction(315),
+            v2Direction(295, .55),
+            v2Direction(240),
+            v2Direction(165),
         ],
         [
             v2Direction(0),
-            v2Direction(-345, .5),
-            v2Direction(-315),
-            v2Direction(-250),
-            v2Direction(-180),
-            v2Direction(-110),
+            v2Direction(345, .5),
+            v2Direction(315),
+            v2Direction(250),
+            v2Direction(180),
+            v2Direction(110),
         ]
 ]
 
 let asteroidsStartingPositions = [
-    { x: 0, y: 0 },
-    { x: 1, y: 0 },
+    { x: -1, y: 1 },
     { x: 1, y: 1 },
-    { x: 0, y: 1 },
+    { x: 1, y: -1 },
+    { x: -1, y: -1 },
 ]
 
 let asteroidsStartingVelocities = [
-    v2Direction(-330, .0002), 
-    v2Direction(-210, .0002), 
-    v2Direction(-150, .0002), 
-    v2Direction(-30, .0002), 
+    v2Direction(330, .000_4), 
+    v2Direction(210, .000_4), 
+    v2Direction(150, .000_4), 
+    v2Direction(30, .000_4), 
 ]
+
+let worldBounds = { x: -1, y: 1 }
 
 function update(timestamp: number) {
     if (timestampPrev == 0) timestampPrev = timestamp
     let tDelta = timestamp - timestampPrev
     timestampPrev = timestamp
-    
-    // Update ship.
-    let angleDelta = ship.rotationSpeed * tDelta
-    if (ship.rotateCW) ship.orientation += angleDelta
-    if (ship.rotateCCW) ship.orientation -= angleDelta
-    ship.orientation = mod(ship.orientation, 360)
-    if (ship.thrust) {
-        ship.acceleration = v2Direction(ship.orientation, .0000015)
-        let velocityDelta = v2Scale(ship.acceleration, tDelta)
-        ship.velocity = v2Add(ship.velocity, velocityDelta)
-    } else {
-        ship.acceleration = v2Negate(ship.velocity)
-        ship.acceleration = v2Normalize(ship.acceleration)
-        ship.acceleration = v2Scale(ship.acceleration, .0000015)
-        let velocityDelta = v2Scale(ship.acceleration, tDelta)
-        ship.velocity = v2Add(ship.velocity, velocityDelta)
-        if (sign(ship.velocity.x) == sign(ship.acceleration.x)
-        && sign(ship.velocity.y) == sign(ship.acceleration.y)) {
-            ship.velocity = { x: 0, y: 0 }
-        }
-    } 
-    if (v2Length(ship.velocity) > ship.speedMax) {
-        ship.velocity = v2Normalize(ship.velocity)
-        ship.velocity = v2Scale(ship.velocity, ship.speedMax)
-    }
-    let positionDelta = v2Scale(ship.velocity, tDelta)
-    ship.position = v2Add(ship.position, positionDelta)
-    ship.position = wrapPosition(ship.position, 0, 1, ship.size)
 
-    // Fire bullets
-    ship.tUntilFireable -= tDelta
-    if (ship.fire && ship.tUntilFireable <= 0) {
-        ship.tUntilFireable = ship.fireRate
-        let bullet = Bullet()
-        let positionDelta = v2Direction(ship.orientation, ship.size + bullet.size)
-        bullet.position = v2Add(ship.position, positionDelta)
-        bullet.velocity = v2Direction(ship.orientation, .001)
-        bullet.tUntilInactive = 800 
-        bullets.push(bullet)
+    {
+        // Move ship.
+        let angleDelta = ship.rotationSpeed * tDelta
+        if (ship.rotateCW) ship.orientation -= angleDelta
+        if (ship.rotateCCW) ship.orientation += angleDelta
+        ship.orientation = mod(ship.orientation, 360)
+        if (ship.thrust) {
+            let velocityDelta = v2Direction(ship.orientation, .000_003)
+            velocityDelta = v2Scale(velocityDelta, tDelta)
+            ship.velocity = v2Add(ship.velocity, velocityDelta)
+        } else {
+            let velocityDelta = v2Negate(ship.velocity)
+            velocityDelta = v2Normalize(velocityDelta)
+            velocityDelta = v2Scale(velocityDelta, .000_003)
+            velocityDelta = v2Scale(velocityDelta, tDelta)
+            ship.velocity = v2Add(ship.velocity, velocityDelta)
+            // Note: This seems like a weird/hacky way to stop the ship.
+            if (sign(ship.velocity.x) == sign(velocityDelta.x)
+            && sign(ship.velocity.y) == sign(velocityDelta.y)) {
+                ship.velocity = { x: 0, y: 0 }
+            }
+        } 
+        if (v2Length(ship.velocity) > ship.speedMax) {
+            ship.velocity = v2Normalize(ship.velocity)
+            ship.velocity = v2Scale(ship.velocity, ship.speedMax)
+        }
+        let positionDelta = v2Scale(ship.velocity, tDelta)
+        ship.position = v2Add(ship.position, positionDelta)
+        let bounds = v2Add(worldBounds, { x: -ship.size, y: ship.size })
+        ship.position = v2Wrap(ship.position, bounds)
+        
+        // Fire bullets
+        ship.tUntilFireable -= tDelta
+        if (ship.fire && ship.tUntilFireable <= 0) {
+            ship.tUntilFireable = ship.fireRate
+            let bullet = Bullet({
+                velocity: v2Direction(ship.orientation, .002),
+                tUntilInactive: 800 
+            })
+            let positionDelta = v2Direction(ship.orientation, ship.size + bullet.size)
+            bullet.position = v2Add(ship.position, positionDelta)
+            bullets.push(bullet)
+        }
     }
 
     // Move bullets.
@@ -128,21 +134,22 @@ function update(timestamp: number) {
         let bullet = bullets[i]
         let positionDelta = v2Scale(bullet.velocity, tDelta)
         bullet.position = v2Add(bullet.position, positionDelta)
-        bullet.position = wrapPosition(bullet.position, 0, 1, bullet.size)
+        let bounds = v2Add(worldBounds, { x: -bullet.size, y: bullet.size })
+        bullet.position = v2Wrap(bullet.position, bounds)
     }
 
     if (asteroids.length == 0) {
         for (let i = 0; i < asteroidsStartingPositions.length; i++) {
-            let asteroid = Asteroid()
-            asteroid.size = .1
-            asteroid.orientation = 0
-            asteroid.position = V2(asteroidsStartingPositions[i])
-            asteroid.velocity = V2(asteroidsStartingVelocities[i])
-            asteroid.verticesIndex = round(random() * 3)
-            asteroid.sizeVariant = AsteroidSize.large
-            asteroid.spawnCount = 2
-            asteroid.scoreOnHit = 100
-            asteroids.push(asteroid)
+            asteroids.push(Asteroid({
+                size: .2,
+                orientation: 0,
+                position: V2(asteroidsStartingPositions[i]),
+                velocity: V2(asteroidsStartingVelocities[i]),
+                verticesIndex: round(random() * (asteroidsVertices.length - 1)),
+                sizeVariant: AsteroidSize.large,
+                spawnCount: 2,
+                scoreOnHit: 100
+            }))
         }
     }
 
@@ -151,7 +158,8 @@ function update(timestamp: number) {
         let asteroid = asteroids[i]
         let positionDelta = v2Scale(asteroid.velocity, tDelta)
         asteroid.position = v2Add(asteroid.position, positionDelta)
-        asteroid.position = wrapPosition(asteroid.position, 0, 1, asteroid.size)
+        let bounds = v2Add(worldBounds, { x: -asteroid.size, y: asteroid.size })
+        asteroid.position = v2Wrap(asteroid.position, bounds)
     }
 
     // The collision methods below don't handle tunneling.
@@ -262,13 +270,14 @@ function update(timestamp: number) {
                 case AsteroidSize.medium: {
                     let direction = v2Rotate(v2Normalize(asteroid.velocity), 90)
                     for (let i = 0; i < asteroid.spawnCount; i++) {
-                        let asteroidNew = Asteroid()
-                        asteroidNew.size = .025
-                        asteroidNew.sizeVariant = AsteroidSize.small
-                        asteroidNew.verticesIndex = round(random() * 3)
-                        asteroidNew.spawnCount = 0
-                        asteroidNew.scoreOnHit = 10
-                        asteroidNew.velocity = v2Scale(direction, v2Length(asteroid.velocity))
+                        let asteroidNew = Asteroid({
+                            size: .05,
+                            sizeVariant: AsteroidSize.small,
+                            verticesIndex: round(random() * (asteroidsVertices.length - 1)),
+                            spawnCount: 0,
+                            scoreOnHit: 10,
+                            velocity: v2Scale(direction, v2Length(asteroid.velocity)),
+                        })
                         asteroidNew.position = v2Add(v2Scale(direction, asteroidNew.size), asteroid.position)
                         direction = v2Rotate(direction, 360 / asteroid.spawnCount)
                         asteroids.push(asteroidNew)
@@ -278,13 +287,14 @@ function update(timestamp: number) {
                 case AsteroidSize.large: {
                     let direction = v2Rotate(v2Normalize(asteroid.velocity), 90)
                     for (let i = 0; i < asteroid.spawnCount; i++) {
-                        let asteroidNew = Asteroid()
-                        asteroidNew.size = .05
-                        asteroidNew.sizeVariant = AsteroidSize.medium
-                        asteroidNew.verticesIndex = round(random() * 3)
-                        asteroidNew.spawnCount = 2
-                        asteroidNew.scoreOnHit = 40
-                        asteroidNew.velocity = v2Scale(direction, v2Length(asteroid.velocity))
+                        let asteroidNew = Asteroid({
+                            size: .1,
+                            sizeVariant: AsteroidSize.medium,
+                            verticesIndex: round(random() * (asteroidsVertices.length - 1)),
+                            spawnCount: 2,
+                            scoreOnHit: 40,
+                            velocity: v2Scale(direction, v2Length(asteroid.velocity)),
+                        })
                         asteroidNew.position = v2Add(v2Scale(direction, asteroidNew.size), asteroid.position)
                         direction = v2Rotate(direction, 360 / asteroid.spawnCount)
                         asteroids.push(asteroidNew)
@@ -295,50 +305,54 @@ function update(timestamp: number) {
         }
     }
 
-    if (ship.explode) {
-        explosions.push(Explosion({
-            position: V2(ship.position)
-        }))
-        ship.explode = false
-        ship.orientation = 0
-        ship.position = { x: .5, y: .5 }
-        ship.velocity = { x: 0, y: 0 }
-        ship.acceleration = { x: 0, y: 0 }
-        ship.tUntilFireable = 0
-        ship.lives--
-    }
-
-    if (ship.lives == 0) {
-        ship.lives = 5
-        ship.score = 0
-        asteroids = []
-        bullets = []
+    {
+        if (ship.explode) {
+            explosions.push(Explosion({
+                position: V2(ship.position)
+            }))
+            ship.explode = false
+            ship.orientation = 0
+            ship.position = { x: 0, y: 0 }
+            ship.velocity = { x: 0, y: 0 }
+            ship.tUntilFireable = 0
+            ship.lives = ship.lives--
+        }
+        if (ship.lives == 0) {
+            ship.lives = 5
+            ship.score = 0
+            asteroids = []
+            bullets = []
+        }
     }
 
     // Begin drawing
     canvas.width = window.innerWidth 
     canvas.height = window.innerHeight 
+    ctx.scale(canvas.width, canvas.height)
+    ctx.translate(.5, .5) // Center the origin
+    ctx.scale(.5, -.5) // Scale to a 2*unit square and flip the y-axis.
+
     ctx.fillStyle = CSSRGBA(backgroundColor) 
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    drawRect(ctx, 2, 2)
+
+    // Scale to world space
     if (canvas.width > canvas.height) {
-        ctx.translate((window.innerWidth - canvas.height) / 2, 0)
-        ctx.scale(canvas.height, canvas.height)
+        ctx.scale(canvas.height / canvas.width, 1)
     } else {
-        ctx.translate(0, (window.innerHeight - canvas.width) / 2)
-        ctx.scale(canvas.width, canvas.width)
+        ctx.scale(1,  canvas.width / canvas.height)
     } 
-    ctx.save()
-    ctx.rect(0, 0, 1, 1)
+
+    ctx.rect(-1, -1, 2, 2)
     ctx.clip()
     ctx.fillStyle = CSSRGBA(spaceColor) 
-    ctx.fillRect(0, 0, 1, 1)
-    
-    drawText('thrust: w', .0015, .5, .025)
-    drawText('rotate counter-clockwise: a', .0015, .5, .05)
-    drawText('rotate clockwise: d', .0015, .5, .075)
-    drawText('fire: space', .0015, .5, .1)
-    drawText(`Score: ${ship.score}`, .004, .25, .05)
-    drawText(`Lives: ${ship.lives}`, .004, .75, .05)
+    drawRect(ctx, 2, 2)
+   
+    drawText('thrust: w', .003, 0, .95)
+    drawText('rotate counter-clockwise: a', .003, 0, .9)
+    drawText('rotate clockwise: d', .003, 0, .85)
+    drawText('fire: space', .003, 0, .8)
+    drawText(`Score: ${ship.score}`, .008, -.5, .9)
+    drawText(`Lives: ${ship.lives}`, .008, .5, .9)
 
     {
         // Draw Ship
@@ -398,8 +412,6 @@ function update(timestamp: number) {
         ctx.fill()
     }
 
-    ctx.restore()
-
     requestAnimationFrame(update)
 }
 
@@ -421,13 +433,27 @@ function processKeyboardInput(ev: KeyboardEvent) {
     }
 }
 
+function drawRect(
+    ctx: CanvasRenderingContext2D, 
+    width: number,
+    height: number,
+    position = { x: 0, y: 0 }, // Is centered
+) {
+    ctx.save()
+    ctx.translate(position.x, position.y)
+    ctx.scale(width, height)
+    ctx.fillRect(-.5, -.5, 1, 1)
+    ctx.restore()
+}
+
 function drawText(text: string, size: number, x: number, y: number) {
-    let metrics = ctx.measureText(text)
+    ctx.textBaseline = "bottom"
+    let metrics = ctx.measureText(text) // This doesn't have great browser support.
     ctx.save()
     ctx.translate(x, y)
-    ctx.scale(size, size)
+    ctx.scale(size, -size)
     ctx.fillStyle = CSSRGBA(textColor)
-    ctx.fillText(text, -metrics.width / 2, 0)
+    ctx.fillText(text, -metrics.width / 2, metrics.actualBoundingBoxAscent / 2)
     ctx.restore()
 }
 
@@ -465,6 +491,6 @@ import {
     v2LengthSquared, 
     v2Length,
     v2Normalize, 
-    wrapPosition,
+    v2Wrap,
     raySegmentIntersect,
 } from './math'
