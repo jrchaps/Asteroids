@@ -100,7 +100,6 @@ function update(timestamp: number) {
             velocityDelta = v2Scale(velocityDelta, .000_003)
             velocityDelta = v2Scale(velocityDelta, tDelta)
             ship.velocity = v2Add(ship.velocity, velocityDelta)
-            // Note: This seems like a weird/hacky way to stop the ship.
             if (sign(ship.velocity.x) == sign(velocityDelta.x)
             && sign(ship.velocity.y) == sign(velocityDelta.y)) {
                 ship.velocity = { x: 0, y: 0 }
@@ -145,7 +144,7 @@ function update(timestamp: number) {
                 orientation: 0,
                 position: V2(asteroidsStartingPositions[i]),
                 velocity: V2(asteroidsStartingVelocities[i]),
-                verticesIndex: round(random() * (asteroidsVertices.length - 1)),
+                verticesIndex: randomIndex(asteroidsVertices),
                 sizeVariant: AsteroidSize.large,
                 spawnCount: 2,
                 scoreOnHit: 100
@@ -273,7 +272,7 @@ function update(timestamp: number) {
                         let asteroidNew = Asteroid({
                             size: .05,
                             sizeVariant: AsteroidSize.small,
-                            verticesIndex: round(random() * (asteroidsVertices.length - 1)),
+                            verticesIndex: randomIndex(asteroidsVertices),
                             spawnCount: 0,
                             scoreOnHit: 10,
                             velocity: v2Scale(direction, v2Length(asteroid.velocity)),
@@ -290,7 +289,7 @@ function update(timestamp: number) {
                         let asteroidNew = Asteroid({
                             size: .1,
                             sizeVariant: AsteroidSize.medium,
-                            verticesIndex: round(random() * (asteroidsVertices.length - 1)),
+                            verticesIndex: randomIndex(asteroidsVertices),
                             spawnCount: 2,
                             scoreOnHit: 40,
                             velocity: v2Scale(direction, v2Length(asteroid.velocity)),
@@ -330,23 +329,22 @@ function update(timestamp: number) {
     canvas.height = window.innerHeight 
     ctx.scale(canvas.width, canvas.height)
     ctx.translate(.5, .5) // Center the origin
-    ctx.scale(.5, -.5) // Scale to a 2*unit square and flip the y-axis.
+    ctx.scale(.5, -.5) // Scale to a 2*unit square and flip the y-axis
 
     ctx.fillStyle = CSSRGBA(backgroundColor) 
     drawRect(ctx, 2, 2)
 
-    // Scale to world space
+    // Transform to world space
     if (canvas.width > canvas.height) {
         ctx.scale(canvas.height / canvas.width, 1)
     } else {
         ctx.scale(1,  canvas.width / canvas.height)
     } 
 
-    ctx.rect(-1, -1, 2, 2)
-    ctx.clip()
+    clipRect(ctx, 2, 2)
     ctx.fillStyle = CSSRGBA(spaceColor) 
     drawRect(ctx, 2, 2)
-   
+
     drawText('thrust: w', .003, 0, .95)
     drawText('rotate counter-clockwise: a', .003, 0, .9)
     drawText('rotate clockwise: d', .003, 0, .85)
@@ -446,6 +444,21 @@ function drawRect(
     ctx.restore()
 }
 
+function clipRect(
+    ctx: CanvasRenderingContext2D, 
+    width: number,
+    height: number,
+    position = { x: 0, y: 0 }, // Is centered
+) {
+    ctx.rect(
+        position.x - (width / 2), 
+        position.y - (height / 2),
+        width,
+        height
+    )
+    ctx.clip()
+}
+
 function drawText(text: string, size: number, x: number, y: number) {
     ctx.textBaseline = "bottom"
     let metrics = ctx.measureText(text) // This doesn't have great browser support.
@@ -475,9 +488,8 @@ import {
     sign,
     square,
     sqrt,
-    round,
     mod, 
-    random,
+    randomIndex,
     pi, 
     degreesToRadians,
     V2, 

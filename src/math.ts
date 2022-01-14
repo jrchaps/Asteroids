@@ -2,6 +2,7 @@ const {
     PI, 
     cos, 
     sin, 
+    ceil,
     floor, 
     round,
     pow,
@@ -33,6 +34,17 @@ function wrap(value: number, min: number, max: number) {
 
 function lerp(from: number, to: number, t: number) {
     return (1 - t) * from + t * to
+}
+
+function randomInt(min: number, max: number) {
+    // Min is inclusive. Max is exclusive
+    min = ceil(min)
+    max = floor(max)
+    return floor(random() * (max - min) + min)
+}
+
+function randomIndex(array: any[]) {
+    return randomInt(0, array.length)
 }
 
 function degreesToRadians(degrees: number) {
@@ -112,12 +124,16 @@ export {
     pow,
     square,
     sqrt,
+    ceil,
     floor, 
     round,
     mod, 
     clamp,
+    wrap,
     lerp,
     random,
+    randomInt,
+    randomIndex,
     pi, 
     cos, 
     sin, 
