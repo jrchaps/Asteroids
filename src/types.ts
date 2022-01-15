@@ -60,7 +60,7 @@ function Bullet({
     position = { x: 0, y: 0 },
     velocity = { x: 0, y: 0 },
     color = { r: .87, g: .87, b: 1, a: 1 },
-    tUntilInactive = 0
+    tUntilInactive = 800
 } = {}) {
     return {
         size,

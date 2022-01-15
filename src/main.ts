@@ -1,6 +1,6 @@
 /*
     Todos:
-    -- Use WebGl. Can we be independent of WebGl and 2D canvas? Probably not, they aren't very compatible.
+    -- Use WebGl.
 */
 
 // Prevent input when user isn't focused on inner window?
@@ -113,15 +113,12 @@ function update(timestamp: number) {
         ship.position = v2Add(ship.position, positionDelta)
         let bounds = v2Add(worldBounds, { x: -ship.size, y: ship.size })
         ship.position = v2Wrap(ship.position, bounds)
-        
-        // Fire bullets
+        // Fire bullets.
         ship.tUntilFireable -= tDelta
         if (ship.fire && ship.tUntilFireable <= 0) {
             ship.tUntilFireable = ship.fireRate
-            let bullet = Bullet({
-                velocity: v2Direction(ship.orientation, .002),
-                tUntilInactive: 800 
-            })
+            let bullet = Bullet()
+            bullet.velocity = v2Direction(ship.orientation, .002)
             let positionDelta = v2Direction(ship.orientation, ship.size + bullet.size)
             bullet.position = v2Add(ship.position, positionDelta)
             bullets.push(bullet)
@@ -139,20 +136,20 @@ function update(timestamp: number) {
 
     if (asteroids.length == 0) {
         for (let i = 0; i < asteroidsStartingPositions.length; i++) {
-            asteroids.push(Asteroid({
-                size: .2,
-                orientation: 0,
-                position: V2(asteroidsStartingPositions[i]),
-                velocity: V2(asteroidsStartingVelocities[i]),
-                verticesIndex: randomIndex(asteroidsVertices),
-                sizeVariant: AsteroidSize.large,
-                spawnCount: 2,
-                scoreOnHit: 100
-            }))
+            let asteroid = Asteroid()
+            asteroid.size = .2
+            asteroid.orientation = 0
+            asteroid.position = V2(asteroidsStartingPositions[i])
+            asteroid.velocity = V2(asteroidsStartingVelocities[i])
+            asteroid.verticesIndex = randomIndex(asteroidsVertices)
+            asteroid.sizeVariant = AsteroidSize.large
+            asteroid.spawnCount = 2
+            asteroid.scoreOnHit = 100
+            asteroids.push(asteroid)
         }
     }
 
-    // Move Asteroids
+    // Move Asteroids.
     for (let i = 0; i < asteroids.length; i++) {
         let asteroid = asteroids[i]
         let positionDelta = v2Scale(asteroid.velocity, tDelta)
@@ -250,7 +247,7 @@ function update(timestamp: number) {
         } 
     }
 
-    // Deactivate bullets
+    // Deactivate bullets.
     for (let i = 0; i < bullets.length; i++) {
         let bullet = bullets[i]
         bullet.tUntilInactive -= tDelta
@@ -261,42 +258,44 @@ function update(timestamp: number) {
     for (let i = 0; i < asteroids.length; i++) {
         let asteroid = asteroids[i]
         if (asteroid.explode) {
-            explosions.push(Explosion({
-                position: V2(asteroid.position)
-            }))
+            let explosion = Explosion()
+            explosion.position = V2(asteroid.position)
+            explosions.push(explosion)
             asteroid.explode = false
             switch (asteroid.sizeVariant)  {
                 case AsteroidSize.medium: {
                     let direction = v2Rotate(v2Normalize(asteroid.velocity), 90)
                     for (let i = 0; i < asteroid.spawnCount; i++) {
-                        let asteroidNew = Asteroid({
-                            size: .05,
-                            sizeVariant: AsteroidSize.small,
-                            verticesIndex: randomIndex(asteroidsVertices),
-                            spawnCount: 0,
-                            scoreOnHit: 10,
-                            velocity: v2Scale(direction, v2Length(asteroid.velocity)),
-                        })
-                        asteroidNew.position = v2Add(v2Scale(direction, asteroidNew.size), asteroid.position)
-                        direction = v2Rotate(direction, 360 / asteroid.spawnCount)
+                        let asteroidNew = Asteroid()
+                        asteroidNew.size = .05
+                        asteroidNew.sizeVariant = AsteroidSize.small
+                        asteroidNew.verticesIndex = randomIndex(asteroidsVertices)
+                        asteroidNew.spawnCount = 0
+                        asteroidNew.scoreOnHit = 10
+                        let speed = v2Length(asteroid.velocity)
+                        asteroidNew.velocity = v2Scale(direction, speed)
+                        let positionDelta = v2Scale(direction, asteroidNew.size)
+                        asteroidNew.position = v2Add(asteroid.position, positionDelta)
                         asteroids.push(asteroidNew)
+                        direction = v2Rotate(direction, 360 / asteroid.spawnCount)
                     }
                     break
                 }
                 case AsteroidSize.large: {
                     let direction = v2Rotate(v2Normalize(asteroid.velocity), 90)
                     for (let i = 0; i < asteroid.spawnCount; i++) {
-                        let asteroidNew = Asteroid({
-                            size: .1,
-                            sizeVariant: AsteroidSize.medium,
-                            verticesIndex: randomIndex(asteroidsVertices),
-                            spawnCount: 2,
-                            scoreOnHit: 40,
-                            velocity: v2Scale(direction, v2Length(asteroid.velocity)),
-                        })
-                        asteroidNew.position = v2Add(v2Scale(direction, asteroidNew.size), asteroid.position)
-                        direction = v2Rotate(direction, 360 / asteroid.spawnCount)
+                        let asteroidNew = Asteroid()
+                        asteroidNew.size = .1
+                        asteroidNew.sizeVariant = AsteroidSize.medium
+                        asteroidNew.verticesIndex = randomIndex(asteroidsVertices)
+                        asteroidNew.spawnCount = 2
+                        asteroidNew.scoreOnHit = 40
+                        let speed = v2Length(asteroid.velocity)
+                        asteroidNew.velocity = v2Scale(direction, speed)
+                        let positionDelta = v2Scale(direction, asteroidNew.size)
+                        asteroidNew.position = v2Add(asteroid.position, positionDelta)
                         asteroids.push(asteroidNew)
+                        direction = v2Rotate(direction, 360 / asteroid.spawnCount)
                     }
                 }
             }
@@ -306,15 +305,15 @@ function update(timestamp: number) {
 
     {
         if (ship.explode) {
-            explosions.push(Explosion({
-                position: V2(ship.position)
-            }))
+            let explosion = Explosion()
+            explosion.position = V2(ship.position)
+            explosions.push(explosion)
             ship.explode = false
             ship.orientation = 0
             ship.position = { x: 0, y: 0 }
             ship.velocity = { x: 0, y: 0 }
             ship.tUntilFireable = 0
-            ship.lives = ship.lives--
+            ship.lives--
         }
         if (ship.lives == 0) {
             ship.lives = 5
@@ -324,17 +323,27 @@ function update(timestamp: number) {
         }
     }
 
+    // Update explosions.
+    for (let i = 0; i < explosions.length; i++) {
+        let explosion = explosions[i]
+        if (explosion.size < explosion.sizeMax) {
+            explosion.size += tDelta * explosion.expansionRate
+        } else {
+            explosions.splice(i, 1)
+        }
+    }
+
     // Begin drawing
     canvas.width = window.innerWidth 
     canvas.height = window.innerHeight 
     ctx.scale(canvas.width, canvas.height)
-    ctx.translate(.5, .5) // Center the origin
-    ctx.scale(.5, -.5) // Scale to a 2*unit square and flip the y-axis
+    ctx.translate(.5, .5) // Center the origin.
+    ctx.scale(.5, -.5) // Scale to a 2x unit square and flip the y-axis.
 
     ctx.fillStyle = CSSRGBA(backgroundColor) 
     drawRect(ctx, 2, 2)
 
-    // Transform to world space
+    // Transform to world space.
     if (canvas.width > canvas.height) {
         ctx.scale(canvas.height / canvas.width, 1)
     } else {
@@ -353,61 +362,49 @@ function update(timestamp: number) {
     drawText(`Lives: ${ship.lives}`, .008, .5, .9)
 
     {
-        // Draw Ship
-        ctx.save()
-        ctx.translate(ship.position.x, ship.position.y)
-        ctx.scale(ship.size, ship.size)
-        ctx.rotate(degreesToRadians(ship.orientation))
-        ctx.beginPath()
-        for (let vertex of ship.vertices) ctx.lineTo(vertex.x, vertex.y)
+        // Draw Ship.
         ctx.fillStyle = CSSRGBA(ship.color)
-        ctx.fill()
-        ctx.restore()
+        drawPolygon(
+            ctx,
+            ship.vertices,
+            ship.size,
+            ship.orientation,
+            ship.position
+        )
     }
     
-    // Draw Asteroids
+    // Draw Asteroids.
     for (let i = 0; i < asteroids.length; i++) {
         let asteroid = asteroids[i]
-        ctx.save()
-        ctx.translate(asteroid.position.x, asteroid.position.y)
-        ctx.scale(asteroid.size, asteroid.size)
-        ctx.beginPath()
-        for (let vertex of asteroidsVertices[asteroid.verticesIndex]) {
-            ctx.lineTo(vertex.x, vertex.y)
-        }
-        ctx.closePath()
         ctx.fillStyle = CSSRGBA(asteroid.color)
-        ctx.fill()
-        ctx.restore()
+        drawPolygon(
+            ctx,
+            asteroidsVertices[asteroid.verticesIndex],
+            asteroid.size,
+            asteroid.orientation,
+            asteroid.position
+        )
     }
 
-    {
-        // Draw explosion particles.
-        for (let i = 0; i < explosions.length; i++) {
-            let explosion = explosions[i]
-            ctx.save()
-            ctx.translate(explosion.position.x, explosion.position.y)
-            for (let j = 0; j < explosion.particleCount; j++) {
-                ctx.beginPath()
-                ctx.arc(explosion.size, 0, explosion.particleSize, 0, pi*2)
-                ctx.fillStyle = CSSRGBA(explosion.particleColor)
-                ctx.fill()
-                ctx.rotate(pi*2 / explosion.particleCount)
-            }
-            ctx.restore()
-            if (explosion.size < explosion.sizeMax) {
-                explosion.size += tDelta * explosion.expansionRate
-            } else explosions.splice(i, 1) 
+    // Draw explosions.
+    for (let i = 0; i < explosions.length; i++) {
+        let explosion = explosions[i]
+        ctx.save()
+        ctx.translate(explosion.position.x, explosion.position.y)
+        for (let j = 0; j < explosion.particleCount; j++) {
+            ctx.fillStyle = CSSRGBA(explosion.particleColor)
+            let position = { x: explosion.size, y: 0 }
+            drawCircle(ctx, explosion.particleSize, position)
+            ctx.rotate(pi*2 / explosion.particleCount)
         }
+        ctx.restore()
     }
     
-    // Draw Bullets
+    // Draw Bullets.
     for (let i = 0; i < bullets.length; i++) {
         let bullet = bullets[i]
-        ctx.beginPath()
-        ctx.arc(bullet.position.x, bullet.position.y, bullet.size, 0, pi*2)
         ctx.fillStyle = CSSRGBA(bullet.color)
-        ctx.fill()
+        drawCircle(ctx, bullet.size, bullet.position)
     }
 
     requestAnimationFrame(update)
@@ -435,7 +432,7 @@ function drawRect(
     ctx: CanvasRenderingContext2D, 
     width: number,
     height: number,
-    position = { x: 0, y: 0 }, // Is centered
+    position = { x: 0, y: 0 }, // Is centered.
 ) {
     ctx.save()
     ctx.translate(position.x, position.y)
@@ -448,7 +445,7 @@ function clipRect(
     ctx: CanvasRenderingContext2D, 
     width: number,
     height: number,
-    position = { x: 0, y: 0 }, // Is centered
+    position = { x: 0, y: 0 }, // Is centered.
 ) {
     ctx.rect(
         position.x - (width / 2), 
@@ -457,6 +454,33 @@ function clipRect(
         height
     )
     ctx.clip()
+}
+
+function drawCircle(
+    ctx: CanvasRenderingContext2D, 
+    radius: number,
+    position = { x: 0, y: 0 }, // Is centered.
+) {
+    ctx.beginPath()
+    ctx.arc(position.x, position.y, radius, 0, pi*2)
+    ctx.fill()
+}
+
+function drawPolygon(
+    ctx: CanvasRenderingContext2D,
+    vertices: V2[],
+    size: number,
+    orientation: number,
+    position = { x: 0, y: 0 }
+) {
+    ctx.save()
+    ctx.translate(position.x, position.y)
+    ctx.scale(size, size)
+    ctx.rotate(degreesToRadians(orientation))
+    ctx.beginPath()
+    for (let vertex of vertices) ctx.lineTo(vertex.x, vertex.y)
+    ctx.fill()
+    ctx.restore()
 }
 
 function drawText(text: string, size: number, x: number, y: number) {
